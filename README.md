@@ -4,19 +4,18 @@
 ElasticSearch Bulk from ndjson file
 
 ```
-$ esbulk-ndjson.exe
-Usage of esbulk-ndjson.exe:
+$ bin\esbulk.exe
+Usage of bin\esbulk.exe:
   -f string
-        json file
+        input json file; nd(newline delimeter) json format (require)
+  -h string
+        elasticsearch host : http://es-host:9200 (require)
   -i string
-        index name
+        index name (require)
   -id string
-        _id field in json (default not set)
-  -n int
+        _id field match json key name (default not set)
+  -s int
         bulk size (default 1000)
-  -s string
-        elasticsearch server : http://es-server
-
 ```
 
 
