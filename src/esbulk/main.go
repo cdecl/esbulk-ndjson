@@ -43,7 +43,7 @@ func getArgs() (flags, bool) {
 	}
 
 	found := isFlagPassed("f")
-	found = found && isFlagPassed("s")
+	found = found && isFlagPassed("h")
 	found = found && isFlagPassed("i")
 
 	if !found {
@@ -111,10 +111,9 @@ func esDoc(js string, fid string) string {
 	return docs
 }
 
-func esInvokeBulk(wg *sync.WaitGroup, es *elasticsearch.Client, index string, docs string) {
+func esInvokeBulk(wg *sync.WaitGroup, es *elasticsearch.Client, index string, docs string, count int) {
 	defer wg.Done()
-	fmt.Println("bulk ----- ")
-	fmt.Println(docs)
+	fmt.Printf("bulk -> %d \n", count)
 
 	_, err := esBulk(es, index, docs)
 	assertPanic(err)
@@ -144,7 +143,8 @@ func main() {
 
 	wg := sync.WaitGroup{}
 
-	for i := 1; ; i++ {
+	count := 0
+	for ; ; count++ {
 		bs, isPrefix, err := reader.ReadLine()
 		if isPrefix || err != nil {
 			break
@@ -158,16 +158,16 @@ func main() {
 		js := esDoc(line, *args.Id)
 		buff += js
 
-		if i%*args.Size == 0 {
+		if count%*args.Size == 0 {
 			wg.Add(1)
-			go esInvokeBulk(&wg, es, *args.Index, buff)
+			go esInvokeBulk(&wg, es, *args.Index, buff, count)
 			buff = ""
 		}
 	}
 
 	if len(buff) > 0 {
 		wg.Add(1)
-		go esInvokeBulk(&wg, es, *args.Index, buff)
+		go esInvokeBulk(&wg, es, *args.Index, buff, count)
 	}
 
 	wg.Wait()
