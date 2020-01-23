@@ -113,7 +113,7 @@ func esDoc(js string, fid string) string {
 
 func esInvokeBulk(wg *sync.WaitGroup, es *elasticsearch.Client, index string, docs string, count int) {
 	defer wg.Done()
-	fmt.Printf("bulk -> %d \n", count)
+	fmt.Printf("bulk -> %s : %d \n", index, count)
 
 	_, err := esBulk(es, index, docs)
 	assertPanic(err)

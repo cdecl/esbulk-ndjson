@@ -4,6 +4,9 @@ GOBIN=$(GOPATH)/bin
 GOFILES=esbulk
 EXEC=esbulk.exe
 
+
+all: build
+
 build:
 	@SET GOPATH=$(GOPATH)& SET GOBIN=$(GOBIN)&  go build -o $(GOBIN)/$(EXEC) $(GOFILES)
 
