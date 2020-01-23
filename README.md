@@ -1,7 +1,7 @@
 
 
 ## esbulk-ndjson
-ElasticSearch Bulk from nkjson file
+ElasticSearch Bulk from ndjson file
 
 ```
 $ esbulk-ndjson.exe
@@ -17,4 +17,15 @@ Usage of esbulk-ndjson.exe:
   -s string
         elasticsearch server : http://es-server
 
+```
+
+
+### Build 
+
+```
+## package get
+$ make get 
+
+## build
+$ make 
 ```
