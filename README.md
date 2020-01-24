@@ -22,9 +22,9 @@ Usage of bin\esbulk.exe:
 ### Build 
 
 ```
-## package get
-$ make get 
-
 ## build
-$ make 
+$ go build 
+
+## Package cleanup
+# go mod tidy
 ```
