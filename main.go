@@ -144,31 +144,34 @@ func main() {
 	wg := sync.WaitGroup{}
 
 	count := 0
-	for ; ; count++ {
-		bs, isPrefix, err := reader.ReadLine()
-		if isPrefix || err != nil {
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
 			break
 		}
 
-		line := string(bs)
 		if len(strings.Trim(line, " ")) == 0 {
+			fmt.Println(line)
 			continue
 		}
 
 		js := esDoc(line, *args.Id)
 		buff += js
 
-		if count%*args.Size == 0 {
+		if count%*args.Size == 0 && count != 0 {
 			wg.Add(1)
 			go esInvokeBulk(&wg, es, *args.Index, buff, count)
 			buff = ""
 		}
+		count++
 	}
 
 	if len(buff) > 0 {
 		wg.Add(1)
 		go esInvokeBulk(&wg, es, *args.Index, buff, count)
+		buff = ""
 	}
 
 	wg.Wait()
+	fmt.Printf("bulk insert done -> %s : %d \n", *args.Index, count)
 }
