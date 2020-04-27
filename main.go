@@ -21,7 +21,8 @@ func esConnect(host string) (*elasticsearch.Client, error) {
 }
 
 func esBulk(es *elasticsearch.Client, index string, docs string) (*esapi.Response, error) {
-	res, err := es.Bulk(strings.NewReader(docs), es.Bulk.WithIndex(index))
+	// res, err := es.Bulk(strings.NewReader(docs), es.Bulk.WithIndex(index))
+	res, err := es.Bulk(strings.NewReader(docs))
 	return res, err
 }
 
@@ -44,20 +45,23 @@ func esGetIDValue(js string, fid string) string {
 	return idval
 }
 
-func esDoc(js string, fid string) string {
+func esDoc(js string, idx string, fid string) string {
 	type ID struct {
-		Id string `json:"_id"`
+		Index string `json:"_index"`
+		Id    string `json:"_id"`
 	}
-	type NoID struct{}
+	type NoID struct {
+		Index string `json:"_index"`
+	}
 
 	type Index struct {
 		Index interface{} `json:"index"`
 	}
 
-	index := Index{NoID{}}
+	index := Index{NoID{idx}}
 	idvalue := esGetIDValue(js, fid)
 	if len(idvalue) > 0 {
-		index = Index{ID{idvalue}}
+		index = Index{ID{idx, idvalue}}
 	}
 
 	meta, _ := json.Marshal(index)
@@ -139,17 +143,13 @@ func Run(args Args) {
 	count := 0
 	for scanner.Scan() {
 		line := scanner.Text()
-		// line, err := reader.ReadString('\n')
-		// if err != nil {
-		// 	break
-		// }
 
 		if len(strings.Trim(line, " ")) == 0 {
 			fmt.Println(line)
 			continue
 		}
 
-		js := esDoc(line, *args.Id)
+		js := esDoc(line, *args.Index, *args.Id)
 		buff += js
 
 		if count%*args.Size == 0 && count != 0 {
