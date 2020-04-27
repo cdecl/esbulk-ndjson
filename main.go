@@ -93,11 +93,6 @@ func esDoc(js string, fid string) string {
 		Index interface{} `json:"index"`
 	}
 
-	type Doc struct {
-		Vip     string   `json:"vip"`
-		Members []string `json:"members"`
-	}
-
 	index := Index{NoID{}}
 	indexname := esGetIndexName(js, fid)
 	if len(indexname) > 0 {
