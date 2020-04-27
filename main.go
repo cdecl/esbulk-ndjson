@@ -14,7 +14,74 @@ import (
 	"github.com/elastic/go-elasticsearch/esapi"
 )
 
-type flags struct {
+func esConnect(host string) (*elasticsearch.Client, error) {
+	cfg := elasticsearch.Config{Addresses: []string{host}}
+	es, err := elasticsearch.NewClient(cfg)
+	return es, err
+}
+
+func esBulk(es *elasticsearch.Client, index string, docs string) (*esapi.Response, error) {
+	res, err := es.Bulk(strings.NewReader(docs), es.Bulk.WithIndex(index))
+	return res, err
+}
+
+func esGetIDValue(js string, fid string) string {
+	idval := ""
+	if len(fid) > 0 {
+		dic := make(map[string]interface{})
+		json.Unmarshal([]byte(js), &dic)
+
+		if v, ok := dic[fid].(string); ok {
+			idval = string(v)
+		}
+		if v, ok := dic[fid].(int); ok {
+			idval = strconv.Itoa(v)
+		}
+		if v, ok := dic[fid].(float64); ok {
+			idval = strconv.Itoa(int(v))
+		}
+	}
+	return idval
+}
+
+func esDoc(js string, fid string) string {
+	type ID struct {
+		Id string `json:"_id"`
+	}
+	type NoID struct{}
+
+	type Index struct {
+		Index interface{} `json:"index"`
+	}
+
+	index := Index{NoID{}}
+	idvalue := esGetIDValue(js, fid)
+	if len(idvalue) > 0 {
+		index = Index{ID{idvalue}}
+	}
+
+	meta, _ := json.Marshal(index)
+	metastr := string(meta)
+	docs := fmt.Sprintf("%s\n%s\n", metastr, js)
+
+	return docs
+}
+
+func esInvokeBulk(wg *sync.WaitGroup, es *elasticsearch.Client, index string, docs string, count int) {
+	defer wg.Done()
+	fmt.Printf("bulk -> %s : %d \n", index, count)
+
+	_, err := esBulk(es, index, docs)
+	assertPanic(err)
+}
+
+func assertPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+type Args struct {
 	File  *string
 	Host  *string
 	Index *string
@@ -22,8 +89,8 @@ type flags struct {
 	Size  *int
 }
 
-func getArgs() (flags, bool) {
-	args := flags{}
+func getArgs() (Args, bool) {
+	args := Args{}
 
 	args.File = flag.String("f", "", "input json file; nd(newline delimeter) json format (require)")
 	args.Host = flag.String("h", "", "elasticsearch host : http://es-host:9200 (require) ")
@@ -55,85 +122,14 @@ func getArgs() (flags, bool) {
 	return args, found
 }
 
-func esConnect(host string) (*elasticsearch.Client, error) {
-	cfg := elasticsearch.Config{Addresses: []string{host}}
-	es, err := elasticsearch.NewClient(cfg)
-	return es, err
-}
-
-func esBulk(es *elasticsearch.Client, index string, docs string) (*esapi.Response, error) {
-	res, err := es.Bulk(strings.NewReader(docs), es.Bulk.WithIndex(index))
-	return res, err
-}
-
-func esGetIndexName(js string, fid string) string {
-	indexname := ""
-	if len(fid) > 0 {
-		dic := make(map[string]interface{})
-		json.Unmarshal([]byte(js), &dic)
-
-		if v, ok := dic[fid].(string); ok {
-			indexname = string(v)
-		}
-		if v, ok := dic[fid].(int); ok {
-			indexname = strconv.Itoa(v)
-		}
-		if v, ok := dic[fid].(float64); ok {
-			indexname = strconv.Itoa(int(v))
-		}
-	}
-	return indexname
-}
-
-func esDoc(js string, fid string) string {
-	type ID struct {
-		Id string `json:"_id"`
-	}
-	type NoID struct{}
-
-	type Index struct {
-		Index interface{} `json:"index"`
-	}
-
-	index := Index{NoID{}}
-	indexname := esGetIndexName(js, fid)
-	if len(indexname) > 0 {
-		index = Index{ID{indexname}}
-	}
-
-	meta, _ := json.Marshal(index)
-	metastr := string(meta)
-	docs := fmt.Sprintf("%s\n%s\n", metastr, js)
-
-	return docs
-}
-
-func esInvokeBulk(wg *sync.WaitGroup, es *elasticsearch.Client, index string, docs string, count int) {
-	defer wg.Done()
-	fmt.Printf("bulk -> %s : %d \n", index, count)
-
-	_, err := esBulk(es, index, docs)
-	assertPanic(err)
-}
-
-func assertPanic(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func main() {
-	args, ok := getArgs()
-	if !ok {
-		return
-	}
-
+func Run(args Args) {
 	buff := ""
 	fin, err := os.Open(*args.File)
 	assertPanic(err)
 
 	defer fin.Close()
-	reader := bufio.NewReader(fin)
+	scanner := bufio.NewScanner(fin)
+	// reader := bufio.NewReader(fin)
 
 	es, err := esConnect(*args.Host)
 	assertPanic(err)
@@ -141,11 +137,12 @@ func main() {
 	wg := sync.WaitGroup{}
 
 	count := 0
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			break
-		}
+	for scanner.Scan() {
+		line := scanner.Text()
+		// line, err := reader.ReadString('\n')
+		// if err != nil {
+		// 	break
+		// }
 
 		if len(strings.Trim(line, " ")) == 0 {
 			fmt.Println(line)
@@ -171,4 +168,13 @@ func main() {
 
 	wg.Wait()
 	fmt.Printf("bulk insert done -> %s : %d \n", *args.Index, count)
+}
+
+func main() {
+	args, ok := getArgs()
+	if !ok {
+		return
+	}
+
+	Run(args)
 }
