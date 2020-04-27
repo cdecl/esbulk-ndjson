@@ -30,6 +30,8 @@ func getArgs() (flags, bool) {
 	args.Index = flag.String("i", "", "index name (require)")
 	args.Id = flag.String("id", "", "_id field match json key name (default not set)")
 	args.Size = flag.Int("s", 1000, "bulk size")
+	flag.Bool("", false, "ver. 200427.0")
+
 	flag.Parse()
 
 	isFlagPassed := func(name string) bool {
