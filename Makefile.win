@@ -1,0 +1,20 @@
+
+PROJECT=esbulk-ndjson
+BIN=$(CURDIR)/bin
+EXEC=$(PROJECT)
+
+
+all: build 
+
+build:
+	go build -o $(BIN)/$(EXEC).exe
+
+test:
+	go test -v 
+
+dep:
+	go mod tidy
+	
+cc:
+	set CGO_ENABLED=0& set GOOS=linux& set GOARCH=amd64& go build -o $(BIN)/$(EXEC) 
+	set CGO_ENABLED=0& set GOOS=windows& set GOARCH=amd64& go build -o $(BIN)/$(EXEC).exe
