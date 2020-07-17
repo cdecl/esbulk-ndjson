@@ -1,0 +1,21 @@
+
+stages:                  
+  - build
+  
+build_linux:
+  image: golang:1.14
+  stage: build
+  only:
+    changes:
+      - ansible.gitlab-ci.yml
+  script:
+    - make dep 
+    - make cc
+    
+  artifacts:
+    paths:
+      - bin
+     
+  tags:
+    - infra
+    
